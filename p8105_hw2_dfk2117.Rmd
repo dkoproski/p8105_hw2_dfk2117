@@ -139,7 +139,6 @@ df_baseline_mci |>
     female_carriers = sum(sex == "female" & apoe4 == "carrier")) |> 
   mutate(f_carrier_ratio = female_carriers / total_females) |> 
   pull(f_carrier_ratio)
-
 ```
 
 

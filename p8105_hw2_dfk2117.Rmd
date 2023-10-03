@@ -162,7 +162,7 @@ df_baseline_mci =
                age_at_onset)
              )
 ```
-  During the import process, the first row needed to be removed as the names of each individual variable were being treated as an individual. I made a copy and removed the extraneous row from the excel file manually before importing. 
+  During the import process, the first row needed to be removed as the names of each individual variable were being treated as an individual. I did this using `skip = 1` in the `read_csv()` function. 
   Based on the dataset, 483 were recruited and of those, 93 developed mci. The mean baseline age is 65.5 years and the code that gives it is:
 
 ```{r}
@@ -195,7 +195,7 @@ df_amyloid_mci =
          year_8 = time_8)
 ```
 
-I also needed to excise the first row of the data before importing. I made a copy and removed the extraneous row before importing. I used the `rename()` function to rename the `study_id` variable to `id` which will make it easier to compare with `df_baseline_mci`
+I also needed to excise the first row of the data while importing using `skip = 1`. I made a copy and removed the extraneous row before importing. I used the `rename()` function to rename the `study_id` variable to `id` which will make it easier to compare with `df_baseline_mci`
 
 ### Comparing the two datasets
 
@@ -211,14 +211,14 @@ df_only_amyloid =
 
 ```
 
-I used the `inner_join()` function to join `df_amyloid_mci` and `df_baseline_mci` by the variable `id`. Based on the resulting 94x11 tibble, it appears that 90 of the participants are shared between the two datasets (have the same value in the `id` column). The resulting dataset contains all variables from both `df_amyloid_mci` and `df_baseline_mci` and all matching observations.
+
 
 ```{r}
 df_baseline_amyloid = 
   inner_join(df_baseline_mci, df_amyloid_mci)
 ```
 
-
+I used the `inner_join()` function to join `df_amyloid_mci` and `df_baseline_mci` by the variable `id`. Based on the resulting 94x11 tibble, it appears that 90 of the participants are shared between the two datasets (have the same value in the `id` column). The resulting dataset contains all variables from both `df_amyloid_mci` and `df_baseline_mci` and all matching observations.
 
 ```{r}
 df_baseline_amyloid |> 
@@ -226,8 +226,6 @@ df_baseline_amyloid |>
 ```
 
 
-
-Similarly, import, clean, and tidy the dataset of longitudinally observed biomarker values; comment on the steps on the import process and the features of the dataset.
 
 Check whether some participants appear in only the baseline or amyloid datasets, and comment on your findings. Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, and briefly describe the resulting dataset; export the result as a CSV to your data directory.
 

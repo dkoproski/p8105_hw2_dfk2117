@@ -84,7 +84,7 @@ df_538 =
 ### Working with the data
 ```{r}
 df_mr_trash =
-  readxl::read_excel("data/202207 Trash Wheel Collection Data.xlsx", sheet = 1) |> 
+  readxl::read_excel("data/202309 Trash Wheel Collection Data.xlsx", sheet = 1) |> 
   janitor::clean_names() |> 
   drop_na(dumpster) |> 
   select(-x15, -x16) |> 
@@ -94,7 +94,7 @@ df_mr_trash =
 
 
 df_pr_trash =
-  readxl::read_excel("data/202207 Trash Wheel Collection Data.xlsx", sheet = 2) |> 
+  readxl::read_excel("data/202309 Trash Wheel Collection Data.xlsx", sheet = 2) |> 
   janitor::clean_names() |> 
   drop_na(dumpster) |> 
   mutate(homes_powered = ((weight_tons * 500)/30)) |> 
@@ -102,7 +102,7 @@ df_pr_trash =
   mutate(year = as.numeric(year))
 
 df_gw_trash =
-  readxl::read_excel("data/202207 Trash Wheel Collection Data.xlsx", sheet = 4) |> 
+  readxl::read_excel("data/202309 Trash Wheel Collection Data.xlsx", sheet = 4) |> 
   janitor::clean_names() |> 
   drop_na(dumpster) |> 
   mutate(homes_powered = ((weight_tons * 500)/30)) |> 
@@ -119,7 +119,7 @@ df_all_wheels =
 ```
 
 ### Descriptions
-  Each of these three datasets contained a month, year and date variable (yyyy/mm/dd). They also contained a dumpster number variable and another two variables representing the amount of trash (in tons) and the volume of the trash (cubic yards) respectively. Each trash wheel also had counts of how many of a certain type of trash was picked up on that date. For Mr. Trash Wheel, this included Plastic Bottles, Polystyrene, Cigarette Butts, Glass Bottles	Grocery Bags, Chip Bags and Sports Balls. Professor Trash Wheel's data included all of these same counts except for the Sports Balls count. Gwynda only included 4 of the 7 counts: Plastic Bottles, Polystyrene, Cigarette Butts and Plastic Bags. Finally, all 3 datasets contained a `homes_powered` variable which was incomplete and not calculated in many instances.
+  Each of these three datasets contained a month, year and date variable (yyyy/mm/dd). They also contained a dumpster number variable and another two variables representing the amount of trash (in tons) and the volume of the trash (cubic yards) respectively. Each trash wheel also had counts of how many of a certain type of trash was picked up on that date. For Mr. Trash Wheel, this included Plastic Bottles, Polystyrene, Cigarette Butts, Glass Bottles, Plastic Bags, Sports Balls and Wrappers. Professor Trash Wheel's data included all of these same counts except for the Sports Balls count. Gwynda only included 5 of the counts: Plastic Bottles, Polystyrene, Cigarette Butts Plastic Bags and Wrappers (which was empty). Finally, all 3 datasets contained a `homes_powered` variable which was incomplete and not calculated in many instances.
   The resulting dataset contains all of the variables that the previous three contained, but now has a variable that labels which trash wheel the data comes from as well as the edited `homes_powered` variable that I made. There are 747 observations in `df_all_wheels`, which makes sense since there are 547, 106 and 94 observations in `df_mr_trash`, `df_gw_trash` and `df_prof_trash` respectively. 
   I used the `mutate()` function on each individual dataset to create a variable named `trash_wheel` which contains the names of each trash wheel (`mr_trash`, `prof_trash` and `gwynda`). I also used the `mutate()` function to make the `homes_powered` variable the weight of trash in tons times 500 over 30 (which is how the variable was described in the xslx file). For example, the 1.69 tons of trash collected by Mr. Trash Wheel on July, 29, 2022 in dumpster 547 powered `(1.69*500)/30` = 28.167 homes.
     I considered removing the counts of trash items that did not overlap in all 3 datasets, but I decided to leave them in for completeness. I merged the datasets using the `bind_rows()` function and then used the relocate function to move variables to the front.
@@ -144,7 +144,7 @@ df_gw_trash |>
 
 ```{r}
 df_baseline_mci =
-  read_csv("data/data_mci/MCI_baseline_trimmed.csv") |>
+  read_csv("data/data_mci/MCI_baseline.csv", skip = 1) |>
   janitor::clean_names() |> 
   mutate(apoe4 =
     case_when(
@@ -156,23 +156,21 @@ df_baseline_mci =
       sex == 1 ~ "male",
       sex == 0 ~ "female")
     ) |> 
-  filter(age_at_onset != ".") |> 
+  filter(current_age < age_at_onset | age_at_onset != ".") |> 
   mutate(age_at_onset = 
            as.numeric(
-             as.character(
                age_at_onset)
              )
-         )
 ```
   During the import process, the first row needed to be removed as the names of each individual variable were being treated as an individual. I made a copy and removed the extraneous row from the excel file manually before importing. 
-  Based on the dataset, 483 were recruited and of those, 97 developed mci. The mean baseline age is 70.3 years and the code that gives it is:
+  Based on the dataset, 483 were recruited and of those, 93 developed mci. The mean baseline age is 65.5 years and the code that gives it is:
 
 ```{r}
 df_baseline_mci |> 
-  summarise(mean(age_at_onset))
+  summarise(mean(current_age))
 ```
 
-  Further, 0.652 or 65.2% of females in the baseline study are carriers of apoe4. The code for this result is below. To do this, I summed up the number of female carriers and total females using the `summarise()` and `sum()` functions. I then created a new temporary variable using `mutate()` called `f_carrier_ratio` which `female_carriers` divided by `total_females`. Finally, I used the `pull()` function to print the new variable.
+  Further, 0.666 or 66.6% of females in the baseline study are carriers of apoe4. The code for this result is below. To do this, I summed up the number of female carriers and total females using the `summarise()` and `sum()` functions. I then created a new temporary variable using `mutate()` called `f_carrier_ratio` which `female_carriers` divided by `total_females`. Finally, I used the `pull()` function to print the new variable.
 
 ```{r}
 df_baseline_mci |> 
@@ -187,9 +185,14 @@ df_baseline_mci |>
 
 ```{r}
 df_amyloid_mci =
-  read_csv("data/data_mci/mci_amyloid_trimmed.csv") |>
+  read_csv("data/data_mci/mci_amyloid.csv", skip = 1) |>
   janitor::clean_names() |> 
-  rename(id = study_id)
+  rename(id = study_id, 
+         year_0 = baseline, 
+         year_2 = time_2, 
+         year_4 = time_4, 
+         year_6 = time_6, 
+         year_8 = time_8)
 ```
 
 I also needed to excise the first row of the data before importing. I made a copy and removed the extraneous row before importing. I used the `rename()` function to rename the `study_id` variable to `id` which will make it easier to compare with `df_baseline_mci`
@@ -197,11 +200,24 @@ I also needed to excise the first row of the data before importing. I made a cop
 ### Comparing the two datasets
 
 ```{r}
-df_baseline_amyloid = 
-  inner_join(df_baseline_mci, df_amyloid_mci, by = "id")
+## only in baseline
+df_only_baseline = 
+  anti_join(df_baseline_mci, df_amyloid_mci)
+
+## only in amyloid
+df_only_amyloid = 
+  anti_join(df_amyloid_mci, df_baseline_mci)
+
+
 ```
 
-I used the `inner_join()` function to join `df_amyloid_mci` and `df_baseline_mci` by the variable `id`. Based on the resulting 94x11 tibble, it appears that 94 of the participants are shared between the two datasets (have the same value in the `id` column). The resulting dataset contains all variables from both `df_amyloid_mci` and `df_baseline_mci` and all matching observations.
+I used the `inner_join()` function to join `df_amyloid_mci` and `df_baseline_mci` by the variable `id`. Based on the resulting 94x11 tibble, it appears that 90 of the participants are shared between the two datasets (have the same value in the `id` column). The resulting dataset contains all variables from both `df_amyloid_mci` and `df_baseline_mci` and all matching observations.
+
+```{r}
+df_baseline_amyloid = 
+  inner_join(df_baseline_mci, df_amyloid_mci)
+```
+
 
 
 ```{r}

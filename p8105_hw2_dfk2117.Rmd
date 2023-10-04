@@ -52,10 +52,10 @@ df_snp =
   left_join(x = _, y = month_df) |> 
   select(year, month, close)
 
-## note I did this one very wrong so I redid it using the answer key code
+## note I did this one very wrong so I redid it using the answer key 
 ```
 
-### Unemployment data
+### Working with unemployment data
 
 ```{r}
 df_unemployment =
@@ -70,13 +70,21 @@ df_unemployment =
   select(year, month, unemployment)
 ```
 
-### merging datasets
+### Merging datasets
 
 ```{r}
 df_538 =
   left_join(df_politicians, df_snp) |>
   left_join(x = _, y = df_unemployment)
 ```
+
+  The `df_politicians` dataset contains contains 822 observations and 11 columns corresponding to `year`, `month`, `month_num` (month as numeric) count of `gov_gop`, count of `sen_gop`, count of `rep_gop` and corresponding variables for democrats. It also contains the `presedent` variable I made which returns `dem` for `prez_dem == 1` and `gop` for `prez_gop %in% c(1,2)`. This is because a number of the observations had a 2 in the `prez_gop` column. The remaining column is just an abbrevation for month (`month_abb`).
+  
+  `df_snp` was trimmed to contain 787 observations of 3 columns: `year`, `month` and `close`. Using `separate()` and `mutate()`, the original data variable was separated, the `year` variable was created in 4 digit format, the `month` variable was changed to show the month name and the `day` variable was excised.
+  
+  The resulting `df_unemployment` has 816 observations and 3 columns representing the variables `Year`, `month` and `unemployment` (as a percent). `pivot_longer()` was used to collapse the original month variables into a single `month` variable and each of the corresponsing unemployments into a single `unemployment` variable making the dataset much more tidy.
+  
+  Finally, `left_join` was used twice to create the resulting `df_538` which has all 3 of the aforementioned datasets together as one. This dataset has 822 observations and 13 columns which are a combination of those in the `df_unemployment`, `df_politicians` and `df_snp`.
 
 
 ## Problem 2 
@@ -121,8 +129,11 @@ df_all_wheels =
 ### Descriptions
   Each of these three datasets contained a month, year and date variable (yyyy/mm/dd). They also contained a dumpster number variable and another two variables representing the amount of trash (in tons) and the volume of the trash (cubic yards) respectively. Each trash wheel also had counts of how many of a certain type of trash was picked up on that date. For Mr. Trash Wheel, this included Plastic Bottles, Polystyrene, Cigarette Butts, Glass Bottles, Plastic Bags, Sports Balls and Wrappers. Professor Trash Wheel's data included all of these same counts except for the Sports Balls count. Gwynda only included 5 of the counts: Plastic Bottles, Polystyrene, Cigarette Butts Plastic Bags and Wrappers (which was empty). Finally, all 3 datasets contained a `homes_powered` variable which was incomplete and not calculated in many instances.
   The resulting dataset contains all of the variables that the previous three contained, but now has a variable that labels which trash wheel the data comes from as well as the edited `homes_powered` variable that I made. There are 747 observations in `df_all_wheels`, which makes sense since there are 574, 155 and 106 observations in `df_mr_trash`, `df_gw_trash` and `df_prof_trash` respectively. 
+  
   I used the `mutate()` function on each individual dataset to create a variable named `trash_wheel` which contains the names of each trash wheel (`mr_trash`, `prof_trash` and `gwynda`). I also used the `mutate()` function to make the `homes_powered` variable the weight of trash in tons times 500 over 30 (which is how the variable was described in the xslx file). For example, the 1.69 tons of trash collected by Mr. Trash Wheel on July, 29, 2022 in dumpster 547 powered `(1.69*500)/30` = 28.167 homes.
-    I considered removing the counts of trash items that did not overlap in all 3 datasets, but I decided to leave them in for completeness. I merged the datasets using the `bind_rows()` function and then used the relocate function to move variables to the front.
+  
+  I considered removing the counts of trash items that did not overlap in all 3 datasets, but I decided to leave them in for completeness. I merged the datasets using the `bind_rows()` function and then used the relocate function to move variables to the front.
+    
   We can calculate the total weight of trash collected by professor trash wheel using the following code (note I had to do something a bit funky I found on stackoverflow at the end because R wasn't printing out any decimals):
 ```{r}
 tw_ptrash = df_pr_trash |> 
@@ -162,6 +173,7 @@ df_baseline_mci =
   filter((current_age < age_at_onset) | is.na(age_at_onset))
 ```
   During the import process, the first row needed to be removed as the names of each individual variable were being treated as an individual. I did this using `skip = 1` in the `read_csv()` function. 
+  
   Based on the dataset, 483 were recruited and of those, we retained 479 of them and removed 4. 71 individuals developed mci. The mean baseline age is 65 years and the code that gives it is:
 
 ```{r}
@@ -199,7 +211,7 @@ df_amyloid_mci =
   )
 ```
 
-I also needed to excise the first row of the data while importing using `skip = 1`. I made a copy and removed the extraneous row before importing. I used the `rename()` function to rename the `study_id` variable to `id` which will make it easier to compare with `df_baseline_mci` I also renamed all of the time points to more accurately convey what the time frame was. Finally, I used `pivot_longer()` to make a new variable called `time_interval` which contains all of time variables that I renamed earlier. I also used `pivot_longer()` to make a `biomarker` variable that contains each of the time intervals' biomarker values.
+  I also needed to excise the first row of the data while importing using `skip = 1`. I made a copy and removed the extraneous row before importing. I used the `rename()` function to rename the `study_id` variable to `id` which will make it easier to compare with `df_baseline_mci` I also renamed all of the time points to more accurately convey what the time frame was. Finally, I used `pivot_longer()` to make a new variable called `time_interval` which contains all of time variables that I renamed earlier. I also used `pivot_longer()` to make a `biomarker` variable that contains each of the time intervals' biomarker values.
 
 ### Comparing the two datasets
 
@@ -242,7 +254,7 @@ count_baseline_amyloid =
 count_baseline_amyloid
 ```
 
-I used the `inner_join()` function to join `df_amyloid_mci` and `df_baseline_mci` by the variable `id`. The result is a 2355x8 tibble, which makes sense as a quick calculation of the count of the unique IDs reveals that there are 471 unique IDs multiplied by the 5 time periods (which were combined into one column earlier) gives 2355 rows. Furthermore, the 471 IDs makes sense given the fact that 8 of the baseline ID's were not present in the amyloid dataset, leading to 479-8=471 remaining in the `df_baseline_amyloid` dataset. The data frame has the exact same columns that were in the `df_baseline_mci` and `df_amyloid_mci` dataset.
+  I used the `inner_join()` function to join `df_amyloid_mci` and `df_baseline_mci` by the variable `id`. The result is a 2355x8 tibble, which makes sense as a quick calculation of the count of the unique IDs reveals that there are 471 unique IDs multiplied by the 5 time periods (which were combined into one column earlier) gives 2355 rows. Furthermore, the 471 IDs makes sense given the fact that 8 of the baseline ID's were not present in the amyloid dataset, leading to 479-8=471 remaining in the `df_baseline_amyloid` dataset. The data frame has the exact same columns that were in the `df_baseline_mci` and `df_amyloid_mci` dataset.
 
 ### Saving the final dataset
 

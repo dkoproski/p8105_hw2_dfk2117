@@ -120,7 +120,7 @@ df_all_wheels =
 
 ### Descriptions
   Each of these three datasets contained a month, year and date variable (yyyy/mm/dd). They also contained a dumpster number variable and another two variables representing the amount of trash (in tons) and the volume of the trash (cubic yards) respectively. Each trash wheel also had counts of how many of a certain type of trash was picked up on that date. For Mr. Trash Wheel, this included Plastic Bottles, Polystyrene, Cigarette Butts, Glass Bottles, Plastic Bags, Sports Balls and Wrappers. Professor Trash Wheel's data included all of these same counts except for the Sports Balls count. Gwynda only included 5 of the counts: Plastic Bottles, Polystyrene, Cigarette Butts Plastic Bags and Wrappers (which was empty). Finally, all 3 datasets contained a `homes_powered` variable which was incomplete and not calculated in many instances.
-  The resulting dataset contains all of the variables that the previous three contained, but now has a variable that labels which trash wheel the data comes from as well as the edited `homes_powered` variable that I made. There are 747 observations in `df_all_wheels`, which makes sense since there are 547, 106 and 94 observations in `df_mr_trash`, `df_gw_trash` and `df_prof_trash` respectively. 
+  The resulting dataset contains all of the variables that the previous three contained, but now has a variable that labels which trash wheel the data comes from as well as the edited `homes_powered` variable that I made. There are 747 observations in `df_all_wheels`, which makes sense since there are 574, 155 and 106 observations in `df_mr_trash`, `df_gw_trash` and `df_prof_trash` respectively. 
   I used the `mutate()` function on each individual dataset to create a variable named `trash_wheel` which contains the names of each trash wheel (`mr_trash`, `prof_trash` and `gwynda`). I also used the `mutate()` function to make the `homes_powered` variable the weight of trash in tons times 500 over 30 (which is how the variable was described in the xslx file). For example, the 1.69 tons of trash collected by Mr. Trash Wheel on July, 29, 2022 in dumpster 547 powered `(1.69*500)/30` = 28.167 homes.
     I considered removing the counts of trash items that did not overlap in all 3 datasets, but I decided to leave them in for completeness. I merged the datasets using the `bind_rows()` function and then used the relocate function to move variables to the front.
   We can calculate the total weight of trash collected by professor trash wheel using the following code (note I had to do something a bit funky I found on stackoverflow at the end because R wasn't printing out any decimals):
@@ -130,13 +130,12 @@ tw_ptrash = df_pr_trash |>
 
   print(sprintf("%.2f", tw_ptrash))
 ```
-  Next, we can calculate the weight of trash collected by Gwynda in July 2021 using this code which filters out the month "july" in the year "2021" and then finds the sum of the trash collected:
+  Next, we can calculate the number of cigarette butts collected by Gwynda in July 2021 using this code which filters out the month "july" in the year "2021" and then finds the sum of the cigarette butts collected:
 ```{r}
 df_gw_trash |> 
   filter(month == "July", year == 2021) |> 
-  summarise(sum(weight_tons))
+  summarise(sum(cigarette_butts))
 ```
-
 
 ## Problem 3
 
@@ -156,21 +155,21 @@ df_baseline_mci =
       sex == 1 ~ "male",
       sex == 0 ~ "female")
     ) |> 
-  filter(current_age < age_at_onset | age_at_onset != ".") |> 
   mutate(age_at_onset = 
            as.numeric(
                age_at_onset)
-             )
+             ) |> 
+  filter((current_age < age_at_onset) | is.na(age_at_onset))
 ```
   During the import process, the first row needed to be removed as the names of each individual variable were being treated as an individual. I did this using `skip = 1` in the `read_csv()` function. 
-  Based on the dataset, 483 were recruited and of those, 93 developed mci. The mean baseline age is 65.5 years and the code that gives it is:
+  Based on the dataset, 483 were recruited and of those, we retained 479 of them and removed 4. 71 individuals developed mci. The mean baseline age is 65 years and the code that gives it is:
 
 ```{r}
 df_baseline_mci |> 
   summarise(mean(current_age))
 ```
 
-  Further, 0.666 or 66.6% of females in the baseline study are carriers of apoe4. The code for this result is below. To do this, I summed up the number of female carriers and total females using the `summarise()` and `sum()` functions. I then created a new temporary variable using `mutate()` called `f_carrier_ratio` which `female_carriers` divided by `total_females`. Finally, I used the `pull()` function to print the new variable.
+  Further, 0.3 or 30% (63 out of 210) of females in the baseline study are carriers of apoe4. The code for this result is below. To do this, I summed up the number of female carriers and total females using the `summarise()` and `sum()` functions. I then created a new temporary variable using `mutate()` called `f_carrier_ratio` which `female_carriers` divided by `total_females`. Finally, I used the `pull()` function to print the new variable.
 
 ```{r}
 df_baseline_mci |> 
@@ -192,42 +191,68 @@ df_amyloid_mci =
          year_2 = time_2, 
          year_4 = time_4, 
          year_6 = time_6, 
-         year_8 = time_8)
+         year_8 = time_8) |> 
+  pivot_longer(
+    year_0:year_8,
+    names_to = "time_interval",
+    values_to = "biomarker"
+  )
 ```
 
-I also needed to excise the first row of the data while importing using `skip = 1`. I made a copy and removed the extraneous row before importing. I used the `rename()` function to rename the `study_id` variable to `id` which will make it easier to compare with `df_baseline_mci`
+I also needed to excise the first row of the data while importing using `skip = 1`. I made a copy and removed the extraneous row before importing. I used the `rename()` function to rename the `study_id` variable to `id` which will make it easier to compare with `df_baseline_mci` I also renamed all of the time points to more accurately convey what the time frame was. Finally, I used `pivot_longer()` to make a new variable called `time_interval` which contains all of time variables that I renamed earlier. I also used `pivot_longer()` to make a `biomarker` variable that contains each of the time intervals' biomarker values.
 
 ### Comparing the two datasets
 
+  Using `anti_join()` and the `distinct()` function on the `id` variable and then counting the number of remaining rows with `nrow()`, we can count the number of unique ID's in only the baseline dataset.There are 8 unique ids only in the baseline set.
+
 ```{r}
 ## only in baseline
-df_only_baseline = 
-  anti_join(df_baseline_mci, df_amyloid_mci)
+count_only_baseline = 
+  anti_join(df_baseline_mci, df_amyloid_mci) |> 
+  distinct(id) |> 
+  nrow()
 
+count_only_baseline
+```
+
+  The same exact process can be used for the amyloid dataset, and we see that there are 16 unique ids in the amyloid dataset that are not in the baseline data.
+
+```{r}
 ## only in amyloid
-df_only_amyloid = 
-  anti_join(df_amyloid_mci, df_baseline_mci)
+count_only_amyloid = 
+  anti_join(df_amyloid_mci, df_baseline_mci) |> 
+  distinct(id) |> 
+  nrow()
 
+count_only_amyloid
 
 ```
 
-
+### Merging the two datasets
 
 ```{r}
 df_baseline_amyloid = 
-  inner_join(df_baseline_mci, df_amyloid_mci)
+  inner_join(df_baseline_mci, df_amyloid_mci) 
+
+count_baseline_amyloid = 
+  df_baseline_amyloid |> 
+    distinct(id) |> 
+    nrow()
+
+count_baseline_amyloid
 ```
 
-I used the `inner_join()` function to join `df_amyloid_mci` and `df_baseline_mci` by the variable `id`. Based on the resulting 94x11 tibble, it appears that 90 of the participants are shared between the two datasets (have the same value in the `id` column). The resulting dataset contains all variables from both `df_amyloid_mci` and `df_baseline_mci` and all matching observations.
+I used the `inner_join()` function to join `df_amyloid_mci` and `df_baseline_mci` by the variable `id`. The result is a 2355x8 tibble, which makes sense as a quick calculation of the count of the unique IDs reveals that there are 471 unique IDs multiplied by the 5 time periods (which were combined into one column earlier) gives 2355 rows. Furthermore, the 471 IDs makes sense given the fact that 8 of the baseline ID's were not present in the amyloid dataset, leading to 479-8=471 remaining in the `df_baseline_amyloid` dataset. The data frame has the exact same columns that were in the `df_baseline_mci` and `df_amyloid_mci` dataset.
+
+### Saving the final dataset
 
 ```{r}
 df_baseline_amyloid |> 
-  write.csv("df_baseline_amyloid.csv")
+  write_csv("df_baseline_amyloid.csv")
 ```
 
 
 
-Check whether some participants appear in only the baseline or amyloid datasets, and comment on your findings. Combine the demographic and biomarker datasets so that only participants who appear in both datasets are retained, and briefly describe the resulting dataset; export the result as a CSV to your data directory.
 
 
 

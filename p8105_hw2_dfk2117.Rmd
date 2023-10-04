@@ -256,7 +256,7 @@ count_baseline_amyloid
 
   I used the `inner_join()` function to join `df_amyloid_mci` and `df_baseline_mci` by the variable `id`. The result is a 2355x8 tibble, which makes sense as a quick calculation of the count of the unique IDs reveals that there are 471 unique IDs multiplied by the 5 time periods (which were combined into one column earlier) gives 2355 rows. Furthermore, the 471 IDs makes sense given the fact that 8 of the baseline ID's were not present in the amyloid dataset, leading to 479-8=471 remaining in the `df_baseline_amyloid` dataset. The data frame has the exact same columns that were in the `df_baseline_mci` and `df_amyloid_mci` dataset.
 
-### Saving the final dataset
+### Saving the final dataset to CSV
 
 ```{r}
 df_baseline_amyloid |> 
